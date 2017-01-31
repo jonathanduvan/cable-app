@@ -1,7 +1,7 @@
 # Cordstream/Commix Scraper
 
 
-## Current Scrapers Available:
+## Current Scrapers Available
   -Xfinity
 
 ## Technical Requirements
