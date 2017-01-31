@@ -127,9 +127,9 @@ first_noformat_price = first_pricing_text[1]
 first_price_per_month = first_noformat_price[:len(first_noformat_price)-5] + '.' + first_noformat_price[len(first_noformat_price)-5:]
 
 if not phantom:
-    print "price: " + first_price_per_month
+    print "first package price: " + first_price_per_month
 
 else:
-    print "price: " + first_pricing_text[0] + ".99/mo"
+    print " first package price: " + first_pricing_text[0] + ".99/mo"
 
-print "\n#######\ncash me oussah\n"
+driver.quit()
