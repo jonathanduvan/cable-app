@@ -1,7 +1,15 @@
 from selenium import webdriver
-from selenium.common.exceptions import InvalidElementStateException
+from selenium.common.exceptions import NoSuchElementException
+import mysql.connector
 import time
 import re
+
+
+
+cnx = mysql.connector.connect(user='cordstreamjon', password='temp44$$',
+                              host='127.0.0.1',
+                              database='employees')
+cnx.close()
 
 street_address = "7705 Nw 73rd Terrace"
 zip_code = 33321
@@ -18,16 +26,10 @@ else:
 
 driver.get(webpage)
 
-try:
-    address = driver.find_element_by_id("contentplaceholder_2__streetNameTxt")
-
-except InvalidElementStateException as ex:
-            enter_address = driver.find_element_by_id("enter_address")
-            enter_address.click()
-
+time.sleep(3)
 enter_address = driver.find_element_by_id("enter_address")
 enter_address.click()
-time.sleep(2)
+time.sleep(5)
 address = driver.find_element_by_id("contentplaceholder_2__streetNameTxt")
 address.send_keys(street_address)
 
@@ -38,24 +40,41 @@ submit = driver.find_element_by_id("contentplaceholder_2__submitIbtn")
 
 submit.click()
 
-time.sleep(10)
-
-links = driver.find_elements_by_xpath("//*[contains(text(), 'new Comcast customer')]")
-
-for link in links:
-    link.click()
-    break
 
 time.sleep(10)
 
-deals = driver.find_elements_by_xpath("//*[contains(text(), 'View Deals')]")
+if (driver.current_url == 'https://www.xfinity.com/localize/activeaccount.aspx'):
+    print "Made it to new customer"
+    try:
+        link = driver.find_element_by_link_text('new Comcast customer')
+        link.click()
 
-for deal in deals:
-     onclick_text2 = deal.get_attribute('class')
 
-     if onclick_text2 and re.search("tmmbtn vd", onclick_text2):
-        deal.click()
-        break
+    except Exception as e:
+        pass
+else:
+    print "errorrrrrr"
+    error_page = driver.find_element_by_class_name('icon-house-cross')
+    error_message = None
+    try:
+        error_message = error_page.text
+        driver.close()
+        print "NOT PROVIDED AT THIS ADDRESS"
+        #return "NOT PROVIDED AT THIS ADDRESS"
+
+    except Exception as e:
+        print e
+        drivr.close()
+        print "UNKNOWN URL"
+        #return "UNKNOWN URL"
+
+try:
+    deal_test = driver.find_element_by_css_selector("a.tmmbtn.vd")
+    deal_test.click()
+
+except Exception as e:
+    pass
+
 
 #Selecting/Deselecting Xfinity package options
 time.sleep(10)
@@ -102,34 +121,58 @@ time.sleep(5)
 
 ###### SCRAPING TIME ##########
 
-#Get first row info
-first_row = driver.find_element_by_css_selector(".offer_row.first_row")
-first_package = first_row.find_element_by_class_name("package")
+#Get the rows
+
+try:
+    more_rows = driver.find_element_by_css_selector("a.sprite") #Check if there are more rows that are hidden
+    more_rows.click()
+except Exception as e:
+    pass
 
 
-package_text = first_package.text.strip().split("\n")
+other_rows = driver.find_elements_by_id("_tvOfferRow")
 
-first_pack_name = package_text[0] #Package name
-print "first package name: " + first_pack_name
+print "########################################"
 
-first_channels = first_row.find_element_by_class_name("channels")
-first_channels_box = first_channels.find_element_by_class_name("num")
+i = 1
+for row in other_rows:
 
-first_channels_text = first_channels_box.text.strip().split("\n")
+    #Get package info
+    pack = row.find_element_by_css_selector("th.package")
+    pack_list = pack.text.strip().split("\n")
 
-print "first package channels: " + first_channels_text[0]
+    if (len(pack_list) == 1):
+        continue
 
-first_pricing = first_row.find_element_by_class_name("total-price")
+    print "\nPackage Number " + str(i) + " Name: " + pack_list[0]
 
-first_pricing_text = first_pricing.text.strip().split("\n")
+    #get channel info
 
-first_noformat_price = first_pricing_text[1]
-first_price_per_month = first_noformat_price[:len(first_noformat_price)-5] + '.' + first_noformat_price[len(first_noformat_price)-5:]
+    channels = row.find_element_by_css_selector("td.channels")
+    channels_box = channels.find_element_by_css_selector("div.num")
 
-if not phantom:
-    print "first package price: " + first_price_per_month
+    channels_text = channels_box.text.strip().split("\n")
 
-else:
-    print " first package price: " + first_pricing_text[0] + ".99/mo"
+    print "Package Number " + str(i) + " Channels: " + str(channels_text[0])
 
-driver.quit()
+    #get pricing info
+    pricing = row.find_element_by_css_selector("div.total-price")
+
+
+    if phantom:
+        inner_text = driver.execute_script("return arguments[0].innerText;", pricing)
+        pricing_text = inner_text.strip().split("\n")
+    else:
+        pricing_text = pricing.text.strip().split("\n")
+
+    if (len(pricing_text[0]) > 10):
+        noformat_price = pricing_text[1]
+    else:
+        noformat_price = pricing_text[0]
+    pricing_per_month = noformat_price[:len(noformat_price)-5] + '.' + noformat_price[len(noformat_price)-5:]
+
+    print "Package Number " + str(i) + " Price: " + str(pricing_per_month) + "\n"
+
+    #Get the next row
+    i+=1
+driver.close()
