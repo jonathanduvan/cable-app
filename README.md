@@ -3,6 +3,7 @@
 
 ## Current Scrapers Available
   -Xfinity
+  -Uverse
 
 ## Technical Requirements
   - Python must be downloaded onto your local machine. Link found [here](https://www.python.org/downloads/). Python on Mac is 2.7.2
